@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>발신</title>
+</head>
+
+<body>
+
+    <button onclick='미디아()'>미디어 버튼</button>
+    <button onclick='캔버스()'>그리기</button>
+    <button onclick='기록()'>기록</button>
+    <video id='myvideo' controls></video>
+    <canvas></canvas>
+
+    <script>
+
+        let mediaRecorder = null;
+        let recordedChunks = []
+        let stream = null
+        let interver = null
+        let video = null
+        let d = 4;
+
+        function set_mediaRecorder(){
+            delete mediaRecorder
+            delete recordedChunks
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = []
+                mediaRecorder.start()
+                mediaRecorder.ondataavailable = function (e) {
+                    //console.log('[mediaRecorder.ondataavailable]', e, e.data)
+                    recordedChunks.push(e.data)
+                    d=e.data
+                    const data_out = new Blob(recordedChunks, {type: `video/webm; codecs="vp8, opus"`})
+                    //console.log(data_out)
+                    set_mediaRecorder()
+                    
+                    
+
+                    /*
+                    var url = URL.createObjectURL(data_out);
+                    var a = document.createElement("a");
+                    document.body.appendChild(a);
+                    a.style = "display: none";
+                    a.href = url;
+                    a.download = "test.webm";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    */
+
+                    fetch('./data', {
+                        method: "POST",
+                        body:data_out
+                    })
+                }
+        }
+
+
+        function 미디아() {
+            async function getMedia(constraints) {
+
+                try {
+                    stream = await navigator.mediaDevices.getDisplayMedia(constraints); //입력 장치 사용 권한을 요청/ 
+                    //stream = await navigator.mediaDevices.getUserMedia(constraints); //입력 장치 사용 권한을 요청/ 
+                    //url = window.URL.createObjectURL(stream)
+                    console.log('stream', stream)
+                }catch(err){
+                    console.log('err', err)
+                    /* 오류 처리 */
+                    return;
+                }
+
+                video = document.querySelector('video');
+                var canvas = document.querySelector('canvas');
+                video.srcObject = stream;
+                video.play()
+                
+
+                canvas.width = video.videoWidth
+                canvas.height = video.videoHeight
+
+
+                set_mediaRecorder()
+                interver = setInterval(()=>{mediaRecorder.stop()},1000)
+
+
+                /* 스트림 사용 */
+            
+            
+            }
+
+            let out = getMedia({video: true, audio: true })
+            console.log('out', out)
+
+
+        }
+
+        function 캔버스() {
+            var video = document.querySelector('video');
+            var canvas = document.querySelector('canvas');
+            var ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth
+            canvas.height = video.videoHeight
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            stream = video.srcObject
+        }
+
+
+    </script>
+</body>
+
+</html>

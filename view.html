@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수신</title>
+</head>
+<body>
+    <video controls></video>
+
+    <script>
+        let video = document.getElementsByTagName('video')[0]
+        let sourceBuffer = null
+        let mp4_data = null;
+        const mimeCodec = `video/webm; codecs="vp8, opus"`;
+        let list = []
+        let dd
+
+
+        const mediaSource = new MediaSource();
+        video.src = URL.createObjectURL(mediaSource);
+        mediaSource.addEventListener('sourceopen', (e)=>{
+            sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+            sourceBuffer.mode = 'sequence';
+            console.log('sourceopen', e, sourceBuffer,mediaSource.readyState);
+
+
+            setInterval(()=>{
+            fetch('./chunk').then(d=>d.text()).then(d=>{
+                const data = JSON.parse(d)
+                ddd = data
+                const out = []
+                for(let key in data) if(!isNaN(Number(key))) out.push(Number(key))
+                //console.log(out)
+                let key = Math.max(...out)
+                if(isNaN(key)) return;
+                ///console.log(key)
+                if(!list.includes(key)){
+                    list.push(key)
+                    fetch_video(key)
+                }
+
+            })
+            
+        },1000)
+
+            
+        });
+
+        function fetch_video(id){
+            if(isNaN(id)) return false;
+
+            //console.log('[fetch_video]',id)
+            fetch('./data/'+id+'.webm').then(d=>{
+                if(d.status==404) return undefined;
+                else return d.blob();
+            }).then(blub=>blub?blub.arrayBuffer():undefined).then(data=>{
+                //console.log(data)
+                dd=data
+                if(data) sourceBuffer.appendBuffer(data)
+            })
+        }
+       
+    </script>
+</body>
+</html>
